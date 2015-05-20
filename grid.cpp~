@@ -180,7 +180,7 @@ std::vector<GridCell>& Grid::operator[](int row)
 {
 	return grid[row];
 }
-const std::vector<GridCell>& Grid::operator[](int row) const
+const std::vector<const GridCell>& Grid::operator[](int row) const
 {
 	return grid[row];
 }

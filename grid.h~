@@ -111,7 +111,7 @@ public:
     GridCell& operator[](const std::pair<int,int> & pos);
     const GridCell& operator[](const std::pair<int,int> & pos) const;
 	std::vector<GridCell>& operator[](int row);
-	const std::vector<GridCell>& operator[](int row) const;
+	const std::vector<const GridCell>& operator[](int row) const;
     std::pair<int,int> getBounds() const;
     int getRows() const;
     int getCols() const;
