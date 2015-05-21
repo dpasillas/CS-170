@@ -107,6 +107,11 @@ struct GridCell
 class Grid
 {
 private:
+    //NORTH, EAST, SOUTH, WEST
+    //row offset, col offset
+    static int ro[4];
+    static int co[4];
+    
     // Number of rows and columns respectively
     std::pair<int,int> bounds;
     
@@ -128,6 +133,9 @@ public:
     int getRows() const;
     int getCols() const;
     std::pair<int,int> getStartLocation() const;
+    bool valid();
+    bool valid(int row, int col);
+    bool legal(int row, int col, Direction d);
     
     ///////////
     // Function print
@@ -137,6 +145,15 @@ public:
     //          of bounds. This parameter is ignored.
     // Out ->
     void print(const std::pair<int,int> & agentPos = std::make_pair(-1, -1)) const;
+};
+
+template<typename T>
+class Adjuster{
+private:
+    T& t;
+public:
+    Adjuster(T& t);
+    ~Adjuster();
 };
 
 #endif

@@ -84,12 +84,12 @@ string toString(Direction dir)
 
 // Constructors
 GridCell::GridCell()
-    : type(BLANK), reward(0.0), start(false), policy(NONE, 0.0)
+    : type(BLANK), reward(0.0), start(false), policy(NONE, 0.0), n(0)
 {
 }
 
 GridCell::GridCell(GridCellType type, double reward, bool start)
-    : type(type), reward(reward), start(start), policy(NONE, 0.0)
+    : type(type), reward(reward), start(start), policy(NONE, 0.0), n(0)
 {
 }
     
@@ -150,6 +150,9 @@ int GridCell::u() const
 ///////////////////
 /// Grid Object ///
 ///////////////////
+
+int Grid::ro[4] = {-1,0,1,0};
+int Grid::co[4] = {0,1,0,-1};
     
 ///////////////
 // Constructors
@@ -160,21 +163,52 @@ int GridCell::u() const
 Grid::Grid(int n, int m)
 {
     bounds = pair<int,int>(n, n);
-    grid = vector<vector<GridCell> >(bounds.first, vector<GridCell>(bounds.second));
+    
+    std::default_random_engine generator(time(0));
+	std::uniform_int_distribution<int> distribution(0,n*n-1);
+	auto randCell = std::bind(distribution, generator);
+    
+    
+    do
+    {
+        grid = vector<vector<GridCell> >(bounds.first, vector<GridCell>(bounds.second));
 
-	static std::default_random_engine generator;
-	static std::uniform_int_distribution<int> distribution(0,n*n-1);
-	static auto randCell = std::bind(distribution, generator);
+        //generate walls
+        int walls = 0;
+        while(walls < n){
+            int loc = randCell();
+            GridCell& cell = grid[loc/n][loc%n];
+            if(cell.type == GridCell::BLANK)
+                cell.type = GridCell::OBSTACLE, walls++;
+        }
+        //generate positive rewards
+        int rewards = 0;
+        while(rewards < m){
+            int loc = randCell();
+            GridCell& cell = grid[loc/n][loc%n];
+            if(cell.type == GridCell::BLANK)
+                cell.type = GridCell::TERMINAL, rewards++, cell.reward=10;
+        }
+        //generate negative rewards
+        rewards = 0;
+        while(rewards < m){
+            int loc = randCell();
+            GridCell& cell = grid[loc/n][loc%n];
+            if(cell.type == GridCell::BLANK)
+                cell.type = GridCell::TERMINAL, rewards++, cell.reward=-10;
+        }
 
-	int loc = randCell();
-    startLocation = pair<int,int>(randCell()/n, randCell%n);
-
-	
-	
-    /* Currently ignores the m parameter in terms of rewards and penalty placement.
-        Also ignores n obstacle placement and assigns startLocation to invalid
-        location on the grid.
-     */
+        //finally, generate start location
+        while(true){
+            int loc = randCell();
+            GridCell& cell = grid[loc/n][loc%n];
+            if(cell.type == GridCell::BLANK){
+                startLocation = pair<int,int>(loc/n, loc%n);
+                grid[loc/n][loc%n].start = true;
+                break;
+            }
+        }
+    }while(!valid());
 }
     
 // Accessors to the 2D grid
@@ -271,3 +305,50 @@ void Grid::print(const pair<int,int> & agentPos) const
     cout << "+";
     cout << endl;
 }
+
+bool Grid::valid()
+{
+    return valid(startLocation.first, startLocation.second);
+}
+
+bool Grid::valid(int row, int col)
+{
+    if(grid[row][col].n){
+            return false;
+    }
+    Adjuster<int> adj(grid[row][col].n);
+    
+    if(grid[row][col].type == GridCell::TERMINAL)
+            return true;
+    //no backtracking!
+    for(Direction d = NORTH; d != NONE; d = (Direction)(d+1) )
+    {
+        if(legal(row,col,d) && valid(row+ro[d], col+co[d]))
+            return true;
+    }
+    
+    return false;
+}
+
+bool Grid::legal(int row, int col, Direction d)
+{
+    int nrow = row + ro[d];
+    int ncol = col + co[d];
+    if(nrow == getRows() || nrow < 0 || ncol == getCols() || ncol < 0)
+        return false;
+    
+    if(grid[nrow][ncol].type == GridCell::OBSTACLE)
+        return false;
+    
+    return true;
+    
+    
+}
+
+template<typename T>
+    Adjuster<T>::Adjuster(T& t) :t(t)
+    {t++;}
+                 
+template<typename T>
+    Adjuster<T>::~Adjuster()
+    {t--;}
