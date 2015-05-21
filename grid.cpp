@@ -142,6 +142,11 @@ pair<Direction, double> GridCell::getPolicy() const
     return policy;
 }
 
+int GridCell::u() const
+{
+	return policy.second;
+}
+
 ///////////////////
 /// Grid Object ///
 ///////////////////
@@ -156,8 +161,16 @@ Grid::Grid(int n, int m)
 {
     bounds = pair<int,int>(n, n);
     grid = vector<vector<GridCell> >(bounds.first, vector<GridCell>(bounds.second));
-    startLocation = pair<int,int>(-1, -1);
-    
+
+	static std::default_random_engine generator;
+	static std::uniform_int_distribution<int> distribution(0,n*n-1);
+	static auto randCell = std::bind(distribution, generator);
+
+	int loc = randCell();
+    startLocation = pair<int,int>(randCell()/n, randCell%n);
+
+	
+	
     /* Currently ignores the m parameter in terms of rewards and penalty placement.
         Also ignores n obstacle placement and assigns startLocation to invalid
         location on the grid.

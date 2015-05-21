@@ -1,3 +1,6 @@
+#ifndef GRID_H
+#define GRID_H
+
 ////////////////////////////////
 //
 // University of California, Riverside
@@ -12,6 +15,9 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <stdlib.h>
+#include <random>
+#include <functional>
 
 ///////////////
 /// Utility ///
@@ -65,6 +71,9 @@ struct GridCell
     
     // Current policy where the first is the direction and the second is the value.
     std::pair<Direction, double> policy;
+
+	// The number of time the cell has been visited
+	int n;
     
     // Constructors
     GridCell();
@@ -84,6 +93,9 @@ struct GridCell
     // In ->
     // Out -> pair<Direction, double>
     std::pair<Direction, double> getPolicy() const;
+
+	// current estimated utility of the cell
+	int u() const;
 };
 
 ///////////////////
@@ -126,3 +138,5 @@ public:
     // Out ->
     void print(const std::pair<int,int> & agentPos = std::make_pair(-1, -1)) const;
 };
+
+#endif
