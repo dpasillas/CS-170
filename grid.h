@@ -19,12 +19,20 @@
 #include <random>
 #include <functional>
 
+
 ///////////////
 /// Utility ///
 ///////////////
 
 const int NUM_DIRECTIONS = 4;
+
+const int ro[4] = {-1,0,1,0};
+const int co[4] = {0,1,0,-1};
+
 enum Direction { NORTH, EAST, SOUTH, WEST, NONE };
+Direction leftOf(Direction d);
+Direction rightOf(Direction d);
+std::pair<int, int> offsetBy(int row, int col, Direction d);
 
 ///////////
 // Function centerStr
@@ -46,7 +54,7 @@ std::string toString(double value, int prec = 2);
 ///////////
 // In -> Direction
 // Out -> string
-std::string toString(Direction dir);
+std::string toString(Direction d);
 
 ///////////////////////
 /// GridCell Object ///
@@ -95,7 +103,9 @@ struct GridCell
     std::pair<Direction, double> getPolicy() const;
 
 	// current estimated utility of the cell
-	int u() const;
+	double& u();
+
+	Direction& dir();
 };
 
 ///////////////////
@@ -104,13 +114,13 @@ struct GridCell
 //
 // Contains information about "GridWorld"
 // and nice ascii printing functionality.
+
+class Agent;
 class Grid
 {
 private:
     //NORTH, EAST, SOUTH, WEST
     //row offset, col offset
-    static int ro[4];
-    static int co[4];
     
     // Number of rows and columns respectively
     std::pair<int,int> bounds;
@@ -129,6 +139,7 @@ public:
     const GridCell& operator[](const std::pair<int,int> & pos) const;
 	std::vector<GridCell>& operator[](int row);
 	const std::vector<GridCell>& operator[](int row) const;
+	GridCell& neighbor(int row, int col, Direction d);
     std::pair<int,int> getBounds() const;
     int getRows() const;
     int getCols() const;
@@ -136,6 +147,10 @@ public:
     bool valid();
     bool valid(int row, int col);
     bool legal(int row, int col, Direction d);
+	void updatePolicy(Agent* agent);
+	void updatePolicy(int row, int col, Agent* agent);
+	GridCell& step(int row, int col, Direction d);
+	
     
     ///////////
     // Function print
@@ -147,6 +162,9 @@ public:
     void print(const std::pair<int,int> & agentPos = std::make_pair(-1, -1)) const;
 };
 
+//increments value when constructed,
+//decrements when destructed
+// this guarantees desired behavior in a block with mutiple exit points
 template<typename T>
 class Adjuster{
 private:

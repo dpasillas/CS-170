@@ -17,4 +17,7 @@ int main(int argc, char** argv){
 	int m = atoi(argv[2]);
 	Grid grid(n,m);
 	grid.print();
+	Agent p(grid);
+	p.run();
+	grid.print();
 }

@@ -14,10 +14,53 @@
 #include <cmath>
 #include <sstream>
 
+#include "agent.h"
+
 using namespace std;
 ///////////////
 /// Utility ///
 ///////////////
+
+Direction leftOf(Direction d)
+{
+	switch(d)
+	{
+	case NORTH:
+		return WEST;
+	case EAST:
+		return NORTH;
+	case SOUTH:
+		return EAST;
+	case WEST:
+		return SOUTH;
+	default:
+		;
+	}
+	return NONE;
+}
+Direction rightOf(Direction d)
+{
+	switch(d)
+	{
+	case NORTH:
+		return EAST;
+	case EAST:
+		return SOUTH;
+	case SOUTH:
+		return WEST;
+	case WEST:
+		return NORTH;
+	default:
+		;
+	}
+	return NONE;
+}
+
+std::pair<int, int> offsetBy(int row, int col, Direction d)
+{
+	return std::make_pair(row+ro[d], col+co[d]);
+}
+
 
 ///////////
 // Function centerStr
@@ -61,9 +104,9 @@ string toString(double value, int prec)
 // Out -> string
 //
 // Returns an ascii version of Direction as a string.
-string toString(Direction dir)
+string toString(Direction d)
 {
-    switch (dir)
+    switch (d)
     {
         case NORTH:
             return "^";
@@ -142,17 +185,20 @@ pair<Direction, double> GridCell::getPolicy() const
     return policy;
 }
 
-int GridCell::u() const
+double& GridCell::u()
 {
 	return policy.second;
 }
 
+Direction& GridCell::dir()
+{
+	return policy.first;
+}
+
+
 ///////////////////
 /// Grid Object ///
 ///////////////////
-
-int Grid::ro[4] = {-1,0,1,0};
-int Grid::co[4] = {0,1,0,-1};
     
 ///////////////
 // Constructors
@@ -209,6 +255,19 @@ Grid::Grid(int n, int m)
             }
         }
     }while(!valid());
+
+	std::uniform_int_distribution<int> d_distribution(0,3);
+	auto randDir = std::bind(d_distribution, generator);
+
+	//now that the board has been generated, create random policy
+	for(int loc = 0; loc < n*n; ++loc)
+	{
+		GridCell& cell = grid[loc/n][loc%n];
+		if(cell.type == GridCell::BLANK){
+			cell.dir() = (Direction)randDir();
+			cell.u() = cell.reward;
+		}
+	}
 }
     
 // Accessors to the 2D grid
@@ -231,6 +290,10 @@ const std::vector<GridCell>& Grid::operator[](int row) const
 {
 	return grid[row];
 }
+GridCell& Grid::neighbor(int row, int col, Direction d){
+	return operator [] (offsetBy(row,col,d));
+}
+
 pair<int,int> Grid::getBounds() const
 {
     return bounds;
@@ -334,15 +397,56 @@ bool Grid::legal(int row, int col, Direction d)
 {
     int nrow = row + ro[d];
     int ncol = col + co[d];
-    if(nrow == getRows() || nrow < 0 || ncol == getCols() || ncol < 0)
+
+	//out of bounds
+    if(nrow >= getRows() || nrow < 0 || ncol >= getCols() || ncol < 0)
         return false;
     
+	//hit a wall
     if(grid[nrow][ncol].type == GridCell::OBSTACLE)
         return false;
     
     return true;
-    
-    
+}
+//  0  1  2
+//  3  4  5
+//  6  7  9
+//  9 10 11
+// 12 13 14
+void Grid::updatePolicy(Agent* agent)
+{
+	int rows = bounds.first;
+	int cols = bounds.second;
+	for(int loc = 0; loc < rows*cols; ++loc)
+		updatePolicy(loc/cols, loc%cols, agent);
+}
+
+void Grid::updatePolicy(int row, int col, Agent* agent)
+{
+	Direction bestDir = NORTH;
+	double bestVal = -11;	
+	for(int dir = 0; dir < NONE; ++dir)
+	{
+		//if(!legal(row,col,(Direction)dir))
+		//	continue;
+
+		GridCell& cell = step(row,col,(Direction)dir);
+
+		double val = agent->f(cell);
+
+		if(val > bestVal){
+			bestDir = (Direction)dir;
+			bestVal = val;
+		}
+	}
+	grid[row][col].dir() = bestDir;
+}
+
+GridCell& Grid::step(int row, int col, Direction d)
+{
+	return (legal(row,col,d)
+				?(operator[](offsetBy(row,col,d)))
+				:(grid[row][col]));
 }
 
 template<typename T>

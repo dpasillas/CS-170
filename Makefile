@@ -4,13 +4,14 @@ sources = $(main).cpp $(headers:.h=.cpp)
 objects = $(sources:.cpp=.o)
 n = 4
 m = 1
-CPP_FLAGS = -std=c++0x
+CPP_FLAGS = -std=c++0x -g
 CPP = g++
-run: $(main).out
-	./$(main).out $(n) $(m)
 
 $(main).out: $(objects)
 	$(CPP) $(CPP_FLAGS) $(objects) -o $(main).out
+
+run: $(main).out
+	./$(main).out $(n) $(m)
 
 .cpp.o:
 	$(CPP) $(CPP_FLAGS) -c $<
