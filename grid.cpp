@@ -23,6 +23,7 @@ using namespace std;
 /// Utility ///
 ///////////////
 
+//return direction left of d
 Direction leftOf(Direction d)
 {
 	switch(d)
@@ -40,6 +41,8 @@ Direction leftOf(Direction d)
 	}
 	return NONE;
 }
+
+//return the direction right of d
 Direction rightOf(Direction d)
 {
 	switch(d)
@@ -58,6 +61,8 @@ Direction rightOf(Direction d)
 	return NONE;
 }
 
+//return a new index after taking a step in the d direction
+// from the given index
 std::pair<int, int> offsetBy(int row, int col, Direction d)
 {
 	return std::make_pair(row+ro[d], col+co[d]);
@@ -133,6 +138,7 @@ GridCell::GridCell()
 {
 }
 
+//unsused
 GridCell::GridCell(GridCellType type, double reward, bool start)
     : type(type), reward(reward), start(start), policy(NONE, 0.0), n(0)
 {
@@ -220,9 +226,10 @@ Grid::Grid(int n, int m)
     
     do
     {
+		//initialize the grid
         grid = vector<vector<GridCell> >(bounds.first, vector<GridCell>(bounds.second));
 
-        //generate walls
+        //generate obstacles
         int walls = 0;
         while(walls < n){
             int loc = randCell();
@@ -257,11 +264,18 @@ Grid::Grid(int n, int m)
                 break;
             }
         }
+	//make sure the grid can reach a terminal state
     }while(!valid());
 
-	UniformRandomInt randDir(0,3);
+	/////////////////////////////////////////////////////
+	// c++11, doesn't work on well.cs.ucr.edu
+	//     g++ is too many versions behind
+	/////////////////////////////////////////////////////
 	//std::uniform_int_distribution<int> d_distribution(0,3);
 	//auto randDir = std::bind(d_distribution, generator);
+
+	//use custom rand instead	
+	UniformRandomInt randDir(0,3);
 
 	//now that the board has been generated, create random policy
 	for(int loc = 0; loc < n*n; ++loc)
@@ -373,6 +387,13 @@ void Grid::print(const pair<int,int> & agentPos) const
     cout << endl;
 }
 
+///////////
+//	Function valid
+///////////
+//	intiates a depth-first search from the start state
+//	returns true if a terminal state may be reached
+//	return false otherwise
+//////////////////
 bool Grid::valid()
 {
     return valid(startLocation.first, startLocation.second);
@@ -380,16 +401,24 @@ bool Grid::valid()
 
 bool Grid::valid(int row, int col)
 {
+	//if the cell have been visited, return
     if(grid[row][col].n){
             return false;
     }
+	//when constructed, n is incremented
+	// this lets us know that the cell has been visited
+	//when destructed, n is decremented
+	// this "unvisits" the cell
     Adjuster<int> adj(grid[row][col].n);
     
+	//we have reached a terminal point
     if(grid[row][col].type == GridCell::TERMINAL)
             return true;
-    //no backtracking!
+	
+	//check in every direction
     for(Direction d = NORTH; d != NONE; d = (Direction)(d+1) )
     {
+		//if we can move in the current direction, 
         if(legal(row,col,d) && valid(row+ro[d], col+co[d]))
             return true;
     }
@@ -412,11 +441,8 @@ bool Grid::legal(int row, int col, Direction d)
     
     return true;
 }
-//  0  1  2
-//  3  4  5
-//  6  7  9
-//  9 10 11
-// 12 13 14
+
+//update the policy of all cells
 void Grid::updatePolicy(Agent* agent)
 {
 	int rows = bounds.first;
@@ -425,6 +451,7 @@ void Grid::updatePolicy(Agent* agent)
 		updatePolicy(loc/cols, loc%cols, agent);
 }
 
+//update the policy of the cell at grid[row][col]
 void Grid::updatePolicy(int row, int col, Agent* agent)
 {
 	Direction bestDir = NORTH;
@@ -446,6 +473,7 @@ void Grid::updatePolicy(int row, int col, Agent* agent)
 	grid[row][col].dir() = bestDir;
 }
 
+//return the new cell after stepping in the d direction 
 GridCell& Grid::step(int row, int col, Direction d)
 {
 	return (legal(row,col,d)

@@ -142,11 +142,18 @@ public:
     int getRows() const;
     int getCols() const;
     std::pair<int,int> getStartLocation() const;
+
+	// check whether the grid can reach a terminal state from the start
     bool valid();
     bool valid(int row, int col);
+	
+	// is this move legal
     bool legal(int row, int col, Direction d);
+		
 	void updatePolicy(Agent* agent);
 	void updatePolicy(int row, int col, Agent* agent);
+	
+	// return the new cell, given taking a step in the d direction
 	GridCell& step(int row, int col, Direction d);
 	
     

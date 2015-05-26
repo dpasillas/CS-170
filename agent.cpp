@@ -16,12 +16,10 @@ const double Agent::FAILURE = 1 - SUCCESS;
 
 Agent::Agent(Grid& grid):grid(grid),cRow(grid.getStartLocation().first),
 									cCol(grid.getStartLocation().second)
-{
-}
+{}
 
 Agent::~Agent()
-{
-}
+{}
 
 void Agent::run()
 {
@@ -29,52 +27,63 @@ void Agent::run()
 	double diff = 0;
 	while(steps++ < ITERATION_THRESHOLD)
 	{
-
 		if(steps%POLICY_THRESHOLD == 0)
 			grid.updatePolicy(this);
+
+		//if MIN_THRESHOLD steps have been taken
+		// check the improvement
 		if(steps%(MIN_THRESHOLD) == 0){	
 			if(diff < UPDATE_THRESHOLD){
-				std::cout << "Diff: " << diff << std::endl;
 				break;
 			}
 			diff = 0;
 		}
 		GridCell& cell = grid[cRow][cCol];
 
-		if(cell.type == GridCell::TERMINAL){
-			std::cout << "ERROR!" << std::endl;
-			return;
-		}
+		//increment visits to the current GridCell
 		cell.n++;
-		//double newU = updateUtility(cRow,cCol,NORTH);
-		//for(int d = 1; d < NONE; ++d)
-		//	newU = std::max(newU, updateUtility(cRow,cCol,(Direction)d));
+
+		//calculate new utility of current cell
 		double newU = updateUtility(cRow,cCol);
+
+		//accumulate the "improvement"
 		diff += abs(newU - cell.u());
+
+		//update utility
 		cell.u() = newU;
 
+		//get direction
+		// 0.8 in direction of policy
+		// 0.1 left of policy
+		// 0.1 right of policy
 		Direction d = step(cell.dir());
+
+		//take a step in that direction
 		move(d);
 
+		//if the agent moved to a terminal state, move to the start state
 		if(grid[cRow][cCol].type == GridCell::TERMINAL)
 		{
 			cRow = grid.getStartLocation().first;
 			cCol = grid.getStartLocation().second;
 		}		
-		//std::cout << cRow << ' ' << cCol << std::endl;
 		//grid.print(std::make_pair(cRow,cCol));
 	}
 }
+
+// temporal difference, unused
 double Agent::updateUtility(int row, int col, Direction dir){
 	GridCell& source = grid[row][col];
 	return source.u() + alpha(source.n) * ( source.reward + GAMMA * expected(row,col,dir) - source.u());
 }
 
+// temporal difference checking all directions
 double Agent::updateUtility(int row, int col){
 	GridCell& source = grid[row][col];
 	return source.u() + alpha(source.n) * ( source.reward + GAMMA * bestExpected(row,col) - source.u());
 }
 
+//exploration function
 double Agent::f(GridCell& cell){
 	if(cell.type == GridCell::TERMINAL)
 		return cell.reward;
@@ -84,11 +93,13 @@ double Agent::f(GridCell& cell){
 	return cell.u();
 }
 
+//decreases learning over time
 double Agent::alpha(int n)
 {
 	return 1.0/(n+1);
 }
 
+//expected value of taking a step in a single direction, unused
 double Agent::expected(int row, int col, Direction d)
 {
 	Direction l = leftOf(d);
@@ -105,9 +116,13 @@ double Agent::expected(int row, int col, Direction d)
 	return forward+left+right;
 }
 
+//max expected value for all directions
 double Agent::bestExpected(int row, int col)
 {
 	double u = grid[row][col].u();
+
+	//if a move is illegal, assume the agent stays in place
+	// we don't use the exploration function if staying in place
 	double utilities[4] = {
 		grid.legal(row,col,NORTH)?f(grid.step(row,col,NORTH)):u,
 		grid.legal(row,col,EAST)?f(grid.step(row,col,EAST)):u,
@@ -115,6 +130,7 @@ double Agent::bestExpected(int row, int col)
 		grid.legal(row,col,WEST)?f(grid.step(row,col,WEST)):u
 	};
 
+	//expected values for all directions
 	double e[4] = {
 		utilities[0] * SUCCESS + utilities[3] * FAILURE / 2 + utilities[1] * FAILURE / 2,
 		utilities[1] * SUCCESS + utilities[0] * FAILURE / 2 + utilities[2] * FAILURE / 2,
@@ -122,6 +138,7 @@ double Agent::bestExpected(int row, int col)
 		utilities[3] * SUCCESS + utilities[2] * FAILURE / 2 + utilities[0] * FAILURE / 2
 	};
 
+	//choose the maximum value of these
 	double best = e[0];
 	for(int i = 1; i < 4; ++i)
 		if(e[i] > best)
@@ -131,14 +148,17 @@ double Agent::bestExpected(int row, int col)
 
 Direction Agent::step(Direction d)
 {
-	//the generator is created ONCE, so our numbers won't repeat
-	//	if this function is called quickly
-	//static std::default_random_engine generator(time(0));
-	//static std::discrete_distribution<int> distribution {SUCCESS, FAILURE/2, FAILURE/2};
-	//static auto randCase = std::bind(distribution, generator);
+	/////////////////////////////////////////////////////
+	// c++11, doesn't work on well.cs.ucr.edu
+	//     g++ is too many versions behind
+	/////////////////////////////////////////////////////
+	/*the generator is created ONCE, so our numbers won't repeat
+		if this function is called quickly
+	static std::default_random_engine generator(time(0));
+	static std::discrete_distribution<int> distribution {SUCCESS, FAILURE/2, FAILURE/2};
+	static auto randCase = std::bind(distribution, generator);*/
 	double weights[] = {SUCCESS, FAILURE/2, FAILURE/2};
 	DiscreteRandomInt randCase(weights,3);
-
 
 	switch(randCase())
 	{
@@ -151,15 +171,20 @@ Direction Agent::step(Direction d)
 	default:
 		;
 	}
+
+	//error code, shouldn't happen
 	std::cout << "ERROR!" << std::endl;
 	return NONE;
 }
 
+//take a step in the d direction
 void Agent::move(Direction d)
 {
+	//if the move is illegal, don't move
 	if(!grid.legal(cRow,cCol,d))
 		return;
 
+	//otherwise, take a step
 	std::pair<int, int> newLoc = offsetBy(cRow, cCol, d);
 	cRow = newLoc.first;
 	cCol = newLoc.second;
