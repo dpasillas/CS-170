@@ -14,6 +14,8 @@
 #include <cmath>
 #include <sstream>
 
+#include "random.h"
+
 #include "agent.h"
 
 using namespace std;
@@ -210,9 +212,10 @@ Grid::Grid(int n, int m)
 {
     bounds = pair<int,int>(n, n);
     
-    std::default_random_engine generator(time(0));
-	std::uniform_int_distribution<int> distribution(0,n*n-1);
-	auto randCell = std::bind(distribution, generator);
+	UniformRandomInt randCell(0,n*n-1);
+    //std::default_random_engine generator(time(0));
+	//std::uniform_int_distribution<int> distribution(0,n*n-1);
+	//auto randCell = std::bind(distribution, generator);
     
     
     do
@@ -256,8 +259,9 @@ Grid::Grid(int n, int m)
         }
     }while(!valid());
 
-	std::uniform_int_distribution<int> d_distribution(0,3);
-	auto randDir = std::bind(d_distribution, generator);
+	UniformRandomInt randDir(0,3);
+	//std::uniform_int_distribution<int> d_distribution(0,3);
+	//auto randDir = std::bind(d_distribution, generator);
 
 	//now that the board has been generated, create random policy
 	for(int loc = 0; loc < n*n; ++loc)

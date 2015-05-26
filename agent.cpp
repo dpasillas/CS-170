@@ -2,11 +2,13 @@
 #include <math.h>
 #include <iostream>
 
+#include "random.h"
+
 const int Agent::EXPLORATION_THRESHOLD = 5;
 const int Agent::ITERATION_THRESHOLD = 100000;
 const int Agent::POLICY_THRESHOLD = 1;
-const int Agent::MIN_THRESHOLD = 10;
-const double Agent::UPDATE_THRESHOLD = 0.001;
+const int Agent::MIN_THRESHOLD = 1000;
+const double Agent::UPDATE_THRESHOLD = 0.0001;
 const double Agent::REWARD_PLUS = 10;
 const double Agent::GAMMA = 0.9;
 const double Agent::SUCCESS = 0.8;
@@ -30,7 +32,7 @@ void Agent::run()
 
 		if(steps%POLICY_THRESHOLD == 0)
 			grid.updatePolicy(this);
-		if(steps%(MIN_THRESHOLD*POLICY_THRESHOLD) == 0){	
+		if(steps%(MIN_THRESHOLD) == 0){	
 			if(diff < UPDATE_THRESHOLD){
 				std::cout << "Diff: " << diff << std::endl;
 				break;
@@ -131,9 +133,12 @@ Direction Agent::step(Direction d)
 {
 	//the generator is created ONCE, so our numbers won't repeat
 	//	if this function is called quickly
-	static std::default_random_engine generator(time(0));
-	static std::discrete_distribution<int> distribution {SUCCESS, FAILURE/2, FAILURE/2};
-	static auto randCase = std::bind(distribution, generator);
+	//static std::default_random_engine generator(time(0));
+	//static std::discrete_distribution<int> distribution {SUCCESS, FAILURE/2, FAILURE/2};
+	//static auto randCase = std::bind(distribution, generator);
+	double weights[] = {SUCCESS, FAILURE/2, FAILURE/2};
+	DiscreteRandomInt randCase(weights,3);
+
 
 	switch(randCase())
 	{

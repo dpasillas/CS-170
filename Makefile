@@ -1,10 +1,10 @@
 main = main
-headers = grid.h agent.h
+headers = grid.h agent.h random.h
 sources = $(main).cpp $(headers:.h=.cpp)
 objects = $(sources:.cpp=.o)
 n = 4
 m = 1
-CPP_FLAGS = -std=c++0x -g
+CPP_FLAGS = -g
 CPP = g++
 
 $(main).out: $(objects)

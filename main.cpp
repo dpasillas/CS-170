@@ -6,6 +6,7 @@
 using namespace std;
 
 int main(int argc, char** argv){
+	srand(time(0));
 	if(argc < 3){
 		cout << "Not enough arguments!" << endl;
 		return -1;
